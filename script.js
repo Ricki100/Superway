@@ -67,48 +67,10 @@ document.addEventListener('DOMContentLoaded', () => {
         observer.observe(el);
     });
 
-    // Animate stats numbers
-    const stats = document.querySelectorAll('.stat-number');
-    stats.forEach(stat => {
-        observer.observe(stat);
-    });
+
 });
 
-// Animate stats numbers when they come into view
-const animateStats = () => {
-    const stats = document.querySelectorAll('.stat-number');
-    stats.forEach(stat => {
-        const target = parseInt(stat.getAttribute('data-target'));
-        const duration = 2000; // 2 seconds
-        const increment = target / (duration / 16); // 60fps
-        let current = 0;
 
-        const updateStat = () => {
-            current += increment;
-            if (current < target) {
-                stat.textContent = Math.floor(current);
-                requestAnimationFrame(updateStat);
-            } else {
-                stat.textContent = target;
-            }
-        };
-
-        updateStat();
-    });
-};
-
-// Trigger stats animation when about section is visible
-const aboutSection = document.querySelector('.about');
-const aboutObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        if (entry.isIntersecting) {
-            animateStats();
-            aboutObserver.unobserve(entry.target);
-        }
-    });
-}, { threshold: 0.5 });
-
-aboutObserver.observe(aboutSection);
 
 // Parallax effect for hero section
 window.addEventListener('scroll', () => {
@@ -417,32 +379,7 @@ const revealSections = () => {
 
 revealSections();
 
-// Add typing effect to hero title
-const typeWriter = (element, text, speed = 100) => {
-    let i = 0;
-    element.innerHTML = '';
-    
-    const type = () => {
-        if (i < text.length) {
-            element.innerHTML += text.charAt(i);
-            i++;
-            setTimeout(type, speed);
-        }
-    };
-    
-    type();
-};
 
-// Initialize typing effect when page loads
-document.addEventListener('DOMContentLoaded', () => {
-    const heroTitle = document.querySelector('.hero-title');
-    if (heroTitle) {
-        const originalText = heroTitle.textContent;
-        setTimeout(() => {
-            typeWriter(heroTitle, originalText, 80);
-        }, 1000);
-    }
-});
 
 // Add smooth hover effects to contact form
 document.querySelectorAll('.form-group input, .form-group textarea').forEach(input => {
