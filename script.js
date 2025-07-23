@@ -414,4 +414,12 @@ const animateCounter = (element, target, duration = 2000) => {
 window.addEventListener('load', () => {
     // Add any additional initialization here
     console.log('Superway Group website loaded successfully!');
+});
+
+// Set current year in footer
+document.addEventListener('DOMContentLoaded', () => {
+    const currentYearElement = document.getElementById('currentYear');
+    if (currentYearElement) {
+        currentYearElement.textContent = new Date().getFullYear();
+    }
 }); 
