@@ -186,7 +186,7 @@ body {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     position: relative;
     overflow: hidden;
-    padding-top: 100px; /* Increased padding to account for fixed navbar */
+    padding-top: 120px; /* Much more padding to ensure no overlap */
     margin-top: 0;
 }
 
@@ -200,13 +200,14 @@ body {
     align-items: center;
     width: 100%;
     box-sizing: border-box;
-    min-height: calc(100vh - 100px); /* Ensure proper height accounting for navbar */
+    min-height: calc(100vh - 120px); /* Updated to match new padding */
 }
 
 .hero-content {
     color: white;
     opacity: 0;
     animation: fadeIn 1.5s ease-out 0.1s forwards;
+    margin-top: 20px; /* Additional margin to push content down */
 }
 
 .hero-title {
@@ -810,13 +811,13 @@ body {
         width: 100%;
         max-width: 100%;
         box-sizing: border-box;
-        min-height: calc(100vh - 100px);
-        padding-top: 20px; /* Additional padding for mobile */
+        min-height: calc(100vh - 120px);
+        padding-top: 40px; /* Much more padding for mobile */
     }
 
     .hero-title {
         font-size: 2.5rem;
-        margin-top: 40px; /* Increased top margin for mobile */
+        margin-top: 60px; /* Much more top margin for mobile */
     }
     
     .hero-subtitle {
@@ -871,7 +872,7 @@ body {
 
     .hero-title {
         font-size: 2rem;
-        margin-top: 30px; /* Increased top margin for small mobile */
+        margin-top: 50px; /* Much more top margin for small mobile */
     }
     
     .hero-subtitle {
