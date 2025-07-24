@@ -186,7 +186,8 @@ body {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     position: relative;
     overflow: hidden;
-    padding-top: 80px; /* Add padding to account for fixed navbar */
+    padding-top: 100px; /* Increased padding to account for fixed navbar */
+    margin-top: 0;
 }
 
 .hero-container {
@@ -199,6 +200,7 @@ body {
     align-items: center;
     width: 100%;
     box-sizing: border-box;
+    min-height: calc(100vh - 100px); /* Ensure proper height accounting for navbar */
 }
 
 .hero-content {
@@ -808,11 +810,13 @@ body {
         width: 100%;
         max-width: 100%;
         box-sizing: border-box;
+        min-height: calc(100vh - 100px);
+        padding-top: 20px; /* Additional padding for mobile */
     }
 
     .hero-title {
         font-size: 2.5rem;
-        margin-top: 20px;
+        margin-top: 40px; /* Increased top margin for mobile */
     }
     
     .hero-subtitle {
@@ -867,7 +871,7 @@ body {
 
     .hero-title {
         font-size: 2rem;
-        margin-top: 15px;
+        margin-top: 30px; /* Increased top margin for small mobile */
     }
     
     .hero-subtitle {
