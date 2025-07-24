@@ -273,7 +273,7 @@ const createScrollProgress = () => {
         left: 0;
         width: 0%;
         height: 3px;
-        background: linear-gradient(90deg, #e74c3c, #667eea);
+        background: linear-gradient(90deg, #e74c3c, #c0392b);
         z-index: 10001;
         transition: width 0.1s ease;
     `;
