@@ -87,6 +87,11 @@ window.addEventListener('scroll', () => {
     }
 });
 
+// Initialize EmailJS
+(function() {
+    emailjs.init("YOUR_EMAILJS_PUBLIC_KEY"); // Replace with your actual EmailJS public key
+})();
+
 // Contact form handling
 const contactForm = document.getElementById('contactForm');
 if (contactForm) {
@@ -103,18 +108,31 @@ if (contactForm) {
         submitBtn.textContent = 'Sending...';
         submitBtn.disabled = true;
         
-        // Simulate form submission (replace with actual form handling)
-        setTimeout(() => {
-            // Show success message
-            showNotification('Thank you! Your message has been sent successfully.', 'success');
-            
-            // Reset form
-            contactForm.reset();
-            
-            // Reset button
-            submitBtn.textContent = originalText;
-            submitBtn.disabled = false;
-        }, 2000);
+        // Prepare email template parameters
+        const templateParams = {
+            from_name: data.name,
+            from_email: data.email,
+            company: data.company || 'Not specified',
+            service: data.service,
+            message: data.message,
+            to_email: 'info@superwaygroup.online'
+        };
+        
+        // Send email using EmailJS
+        emailjs.send('YOUR_EMAILJS_SERVICE_ID', 'YOUR_EMAILJS_TEMPLATE_ID', templateParams)
+            .then(function(response) {
+                console.log('SUCCESS!', response.status, response.text);
+                showNotification('Thank you! Your message has been sent successfully.', 'success');
+                contactForm.reset();
+            }, function(error) {
+                console.log('FAILED...', error);
+                showNotification('Sorry, there was an error sending your message. Please try again.', 'error');
+            })
+            .finally(function() {
+                // Reset button
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            });
     });
 }
 
@@ -139,7 +157,7 @@ function showNotification(message, type = 'info') {
         position: fixed;
         top: 100px;
         right: 20px;
-        background: ${type === 'success' ? '#27ae60' : '#3498db'};
+        background: ${type === 'success' ? '#27ae60' : type === 'error' ? '#e74c3c' : '#3498db'};
         color: white;
         padding: 15px 20px;
         border-radius: 10px;
