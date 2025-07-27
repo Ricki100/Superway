@@ -112,7 +112,7 @@ if (contactForm) {
         const templateParams = {
             from_name: data.name,
             from_email: data.email,
-            company: data.company || 'Not specified',
+            phone: data.phone,
             service: data.service,
             message: data.message,
             to_email: 'info@superwaygroup.online'
