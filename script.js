@@ -89,7 +89,7 @@ window.addEventListener('scroll', () => {
 
 // Initialize EmailJS
 (function() {
-    emailjs.init("YOUR_EMAILJS_PUBLIC_KEY"); // Replace with your actual EmailJS public key
+            emailjs.init("8EJ11hMm_Y23NTUuX");
 })();
 
 // Contact form handling
@@ -119,7 +119,7 @@ if (contactForm) {
         };
         
         // Send email using EmailJS
-        emailjs.send('YOUR_EMAILJS_SERVICE_ID', 'YOUR_EMAILJS_TEMPLATE_ID', templateParams)
+        emailjs.send('service_i71xf3h', 'template_s0gj98c', templateParams)
             .then(function(response) {
                 console.log('SUCCESS!', response.status, response.text);
                 showNotification('Thank you! Your message has been sent successfully.', 'success');
