@@ -67,7 +67,14 @@ document.addEventListener('DOMContentLoaded', () => {
         observer.observe(el);
     });
 
+    // Initialize gallery
+    initGallery();
 
+    // Set current year in footer
+    const currentYearElement = document.getElementById('currentYear');
+    if (currentYearElement) {
+        currentYearElement.textContent = new Date().getFullYear();
+    }
 });
 
 
@@ -91,6 +98,464 @@ window.addEventListener('scroll', () => {
 (function() {
             emailjs.init("8EJ11hMm_Y23NTUuX");
 })();
+
+// Gallery Configuration
+const GALLERY_CONFIG = {
+    useLocalImages: true,
+    imagesFolder: './images/',
+    itemsPerLoad: 10, // Load 10 images at a time
+    currentLoad: 0
+};
+
+// Gallery State
+const galleryState = {
+    images: [],
+    loadedImages: [],
+    isLoading: false
+};
+
+// Initialize Gallery
+function initGallery() {
+    loadGalleryImages();
+    setupLightbox();
+    setupInfiniteScroll();
+    setupMasonryResize();
+}
+
+// Setup Masonry Resize Handler
+function setupMasonryResize() {
+    let resizeTimeout;
+    
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+            handleMasonryLayout();
+        }, 250);
+    });
+}
+
+// Load Gallery Images
+async function loadGalleryImages() {
+    const galleryGrid = document.getElementById('galleryGrid');
+    if (!galleryGrid) return;
+
+    galleryState.isLoading = true;
+    showLoadingState();
+
+    try {
+        if (GALLERY_CONFIG.useLocalImages) {
+            await loadFromLocalImages();
+        } else {
+            // For demonstration, we'll use sample images
+            galleryState.images = GALLERY_CONFIG.sampleImages;
+            galleryState.filteredImages = [...galleryState.images];
+        }
+        
+        renderGallery();
+    } catch (error) {
+        console.error('Error loading gallery images:', error);
+        showErrorState();
+    } finally {
+        galleryState.isLoading = false;
+        hideLoadingState();
+    }
+}
+
+// Load Local Images
+async function loadFromLocalImages() {
+    try {
+        // Dynamic image loading - automatically detect images in the folder
+        const dynamicImages = await loadImagesDynamically();
+        
+        if (dynamicImages.length > 0) {
+            galleryState.images = dynamicImages;
+            
+            // Load first batch of images
+            const firstBatch = dynamicImages.slice(0, GALLERY_CONFIG.itemsPerLoad);
+            galleryState.loadedImages = firstBatch;
+            GALLERY_CONFIG.currentLoad = 1;
+            
+            console.log(`Loaded ${dynamicImages.length} images dynamically from ./images/ folder`);
+        } else {
+            console.log('No images found in ./images/ folder');
+        }
+        
+    } catch (error) {
+        console.error('Error loading local images:', error);
+    }
+}
+
+// Dynamically load images from the images folder
+async function loadImagesDynamically() {
+    const images = [];
+    let id = 1;
+    
+    try {
+        // Method 1: Try to use the API endpoint (if server is running)
+        const response = await fetch('/api/images');
+        if (response.ok) {
+            const data = await response.json();
+            console.log(`Found ${data.images.length} images via API`);
+            
+            data.images.forEach(filename => {
+                images.push(createImageObject(id++, filename));
+            });
+            
+            return images;
+        }
+    } catch (error) {
+        console.log('API not available, trying alternative methods');
+    }
+    
+    // Method 2: Try to fetch directory listing
+    try {
+        const response = await fetch('./images/');
+        if (response.ok) {
+            const html = await response.text();
+            const imageFiles = extractImageFilesFromHTML(html, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp']);
+            
+            imageFiles.forEach(filename => {
+                images.push(createImageObject(id++, filename));
+            });
+            
+            if (images.length > 0) {
+                console.log(`Found ${images.length} images via directory listing`);
+                return images;
+            }
+        }
+    } catch (error) {
+        console.log('Directory listing not available, trying pattern matching');
+    }
+    
+    // Method 3: Try common patterns
+    const commonNames = generateCommonImageNames();
+    for (const filename of commonNames) {
+        const imageExists = await checkImageExists(`./images/${filename}`);
+        if (imageExists) {
+            images.push(createImageObject(id++, filename));
+        }
+    }
+    
+    if (images.length > 0) {
+        console.log(`Found ${images.length} images via pattern matching`);
+        return images;
+    }
+    
+    // Method 4: Try WhatsApp patterns (for your specific case)
+    const whatsappPatterns = generateWhatsAppPatterns();
+    for (const filename of whatsappPatterns) {
+        const imageExists = await checkImageExists(`./images/${filename}`);
+        if (imageExists) {
+            images.push(createImageObject(id++, filename));
+        }
+    }
+    
+    console.log(`Found ${images.length} images via WhatsApp pattern matching`);
+    return images;
+}
+
+// Create image object with clean title from filename
+function createImageObject(id, filename) {
+    // Generate a clean title from filename
+    const title = generateCleanTitleFromFilename(filename);
+    
+    return {
+        id: id,
+        src: `./images/${filename}`,
+        title: title,
+        filename: filename
+    };
+}
+
+// Generate clean title from filename
+function generateCleanTitleFromFilename(filename) {
+    // Remove extension
+    let name = filename.replace(/\.[^/.]+$/, "");
+    
+    // Handle WhatsApp naming pattern
+    if (name.includes('WhatsApp Image')) {
+        const timeMatch = name.match(/at (\d+\.\d+\.\d+)/);
+        if (timeMatch) {
+            return `Image ${timeMatch[1]}`;
+        }
+    }
+    
+    // Handle common patterns
+    if (name.includes('image') || name.includes('img')) {
+        const numMatch = name.match(/(\d+)/);
+        if (numMatch) {
+            return `Image ${numMatch[1]}`;
+        }
+    }
+    
+    // Remove common prefixes and clean up
+    name = name.replace(/^(IMG_|DSC_|PIC_|image_|img_)/i, '');
+    name = name.replace(/[-_]/g, ' ');
+    name = name.replace(/\s+/g, ' ').trim();
+    
+    // Capitalize first letter of each word
+    name = name.replace(/\b\w/g, l => l.toUpperCase());
+    
+    return name || `Image ${id}`;
+}
+
+
+
+// Check if an image exists
+async function checkImageExists(url) {
+    try {
+        const response = await fetch(url, { method: 'HEAD' });
+        return response.ok;
+    } catch (error) {
+        return false;
+    }
+}
+
+// Extract image files from HTML directory listing
+function extractImageFilesFromHTML(html, extensions) {
+    const files = [];
+    const regex = new RegExp(`href="([^"]*\\.(${extensions.join('|')}))"`, 'gi');
+    let match;
+    
+    while ((match = regex.exec(html)) !== null) {
+        files.push(match[1]);
+    }
+    
+    return files;
+}
+
+// Generate common image names to try
+function generateCommonImageNames() {
+    const names = [];
+    
+    // Common patterns
+    for (let i = 1; i <= 50; i++) {
+        names.push(`image${i}.jpg`);
+        names.push(`image${i}.jpeg`);
+        names.push(`image${i}.png`);
+        names.push(`img${i}.jpg`);
+        names.push(`img${i}.jpeg`);
+        names.push(`img${i}.png`);
+        names.push(`photo${i}.jpg`);
+        names.push(`photo${i}.jpeg`);
+        names.push(`photo${i}.png`);
+    }
+    
+    return names;
+}
+
+// Generate WhatsApp naming patterns
+function generateWhatsAppPatterns() {
+    const patterns = [];
+    
+    // WhatsApp Image patterns for July 27, 2025
+    for (let hour = 7; hour <= 7; hour++) {
+        for (let minute = 20; minute <= 31; minute++) {
+            for (let second = 20; second <= 31; second++) {
+                patterns.push(`WhatsApp Image 2025-07-27 at ${hour.toString().padStart(2, '0')}.${minute.toString().padStart(2, '0')}.${second.toString().padStart(2, '0')} PM.jpeg`);
+                patterns.push(`WhatsApp Image 2025-07-27 at ${hour.toString().padStart(2, '0')}.${minute.toString().padStart(2, '0')}.${second.toString().padStart(2, '0')} PM (1).jpeg`);
+                patterns.push(`WhatsApp Image 2025-07-27 at ${hour.toString().padStart(2, '0')}.${minute.toString().padStart(2, '0')}.${second.toString().padStart(2, '0')} PM (2).jpeg`);
+            }
+        }
+    }
+    
+    return patterns;
+}
+
+// Render Gallery
+function renderGallery() {
+    const galleryGrid = document.getElementById('galleryGrid');
+    if (!galleryGrid) return;
+
+    // Clear existing content
+    galleryGrid.innerHTML = '';
+
+    // Get current loaded items
+    const currentItems = galleryState.loadedImages;
+
+    if (currentItems.length === 0) {
+        galleryGrid.innerHTML = `
+            <div class="gallery-empty" style="grid-column: 1 / -1; text-align: center; padding: 60px 20px;">
+                <i class="fas fa-images" style="font-size: 48px; color: #ccc; margin-bottom: 20px;"></i>
+                <p style="color: #666; font-size: 18px;">No images found</p>
+            </div>
+        `;
+        return;
+    }
+
+    // Create gallery items with staggered animation
+    currentItems.forEach((image, index) => {
+        const galleryItem = createGalleryItem(image, index);
+        galleryGrid.appendChild(galleryItem);
+        
+        // Add staggered animation delay
+        setTimeout(() => {
+            galleryItem.style.opacity = '1';
+            galleryItem.style.transform = 'translateY(0)';
+        }, index * 100); // 100ms delay between each image
+    });
+
+    // Trigger masonry layout after images load
+    setTimeout(() => {
+        handleMasonryLayout();
+    }, 100);
+}
+
+// Handle Masonry Layout
+function handleMasonryLayout() {
+    const galleryGrid = document.getElementById('galleryGrid');
+    if (!galleryGrid) return;
+
+    // Force a reflow to ensure proper masonry layout
+    galleryGrid.style.display = 'none';
+    galleryGrid.offsetHeight; // Trigger reflow
+    galleryGrid.style.display = 'block';
+}
+
+// Create Gallery Item
+function createGalleryItem(image, index) {
+    const item = document.createElement('div');
+    item.className = 'gallery-item';
+    item.setAttribute('data-index', index);
+    
+    item.innerHTML = `
+        <img src="${image.src}" alt="${image.title}" loading="lazy" onload="handleImageLoad(this)">
+    `;
+
+    // Add click event for lightbox
+    item.addEventListener('click', () => openLightbox(index));
+
+    return item;
+}
+
+// Handle Image Load for Masonry
+function handleImageLoad(img) {
+    // Trigger masonry layout adjustment when image loads
+    setTimeout(() => {
+        handleMasonryLayout();
+    }, 50);
+}
+
+
+
+
+
+// Setup Lightbox
+function setupLightbox() {
+    const lightbox = document.getElementById('lightbox');
+    const closeBtn = document.querySelector('.lightbox-close');
+    const prevBtn = document.getElementById('lightboxPrev');
+    const nextBtn = document.getElementById('lightboxNext');
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeLightbox);
+    }
+
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => navigateLightbox(-1));
+    }
+
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => navigateLightbox(1));
+    }
+
+    // Close on background click
+    if (lightbox) {
+        lightbox.addEventListener('click', (e) => {
+            if (e.target === lightbox) {
+                closeLightbox();
+            }
+        });
+    }
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+        if (!lightbox || !lightbox.classList.contains('active')) return;
+        
+        switch (e.key) {
+            case 'Escape':
+                closeLightbox();
+                break;
+            case 'ArrowLeft':
+                navigateLightbox(-1);
+                break;
+            case 'ArrowRight':
+                navigateLightbox(1);
+                break;
+        }
+    });
+}
+
+// Open Lightbox
+function openLightbox(index) {
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImage = document.getElementById('lightboxImage');
+    const lightboxCaption = document.getElementById('lightboxCaption');
+    
+    if (!lightbox || !lightboxImage) return;
+
+    galleryState.currentIndex = index;
+    const image = galleryState.images[index]; // Use galleryState.images directly
+    
+    lightboxImage.src = image.src;
+    lightboxImage.alt = image.title;
+    lightboxCaption.textContent = ''; // No caption text
+    
+    lightbox.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+// Close Lightbox
+function closeLightbox() {
+    const lightbox = document.getElementById('lightbox');
+    if (lightbox) {
+        lightbox.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+}
+
+// Navigate Lightbox
+function navigateLightbox(direction) {
+    const newIndex = galleryState.currentIndex + direction;
+    
+    if (newIndex >= 0 && newIndex < galleryState.images.length) { // Use galleryState.images directly
+        openLightbox(newIndex);
+    }
+}
+
+
+
+// Show Loading State
+function showLoadingState() {
+    const galleryGrid = document.getElementById('galleryGrid');
+    if (galleryGrid) {
+        galleryGrid.innerHTML = `
+            <div class="gallery-loading">
+                <div class="loading-spinner"></div>
+                <p>Loading gallery...</p>
+            </div>
+        `;
+    }
+}
+
+// Hide Loading State
+function hideLoadingState() {
+    // Loading state is cleared in renderGallery()
+}
+
+// Show Error State
+function showErrorState() {
+    const galleryGrid = document.getElementById('galleryGrid');
+    if (galleryGrid) {
+        galleryGrid.innerHTML = `
+            <div class="gallery-error" style="grid-column: 1 / -1; text-align: center; padding: 60px 20px;">
+                <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: #e74c3c; margin-bottom: 20px;"></i>
+                <p style="color: #666; font-size: 18px;">Failed to load gallery images</p>
+                <button class="btn btn-primary" onclick="loadGalleryImages()" style="margin-top: 20px;">Try Again</button>
+            </div>
+        `;
+    }
+}
 
 // Contact form handling
 const contactForm = document.getElementById('contactForm');
@@ -441,3 +906,94 @@ document.addEventListener('DOMContentLoaded', () => {
         currentYearElement.textContent = new Date().getFullYear();
     }
 }); 
+
+// Setup Infinite Scroll
+function setupInfiniteScroll() {
+    // Use Intersection Observer for better performance
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                loadMoreImages();
+            }
+        });
+    }, {
+        rootMargin: '100px' // Start loading when user is 100px away from the bottom
+    });
+
+    // Create a sentinel element at the bottom of the gallery
+    const sentinel = document.createElement('div');
+    sentinel.id = 'scroll-sentinel';
+    sentinel.style.height = '1px';
+    sentinel.style.width = '100%';
+    
+    const galleryContainer = document.querySelector('.gallery-container');
+    if (galleryContainer) {
+        galleryContainer.appendChild(sentinel);
+        observer.observe(sentinel);
+    }
+}
+
+// Load More Images (Infinite Scroll)
+async function loadMoreImages() {
+    // Prevent multiple simultaneous loads
+    if (galleryState.isLoading) return;
+    
+    const totalImages = galleryState.images.length;
+    const loadedCount = galleryState.loadedImages.length;
+    
+    // Check if all images are already loaded
+    if (loadedCount >= totalImages) return;
+    
+    galleryState.isLoading = true;
+
+    // Calculate next batch of images
+    const startIndex = loadedCount;
+    const endIndex = Math.min(startIndex + GALLERY_CONFIG.itemsPerLoad, totalImages);
+    const nextBatch = galleryState.images.slice(startIndex, endIndex);
+
+    if (nextBatch.length > 0) {
+        // Add new images to loaded images
+        galleryState.loadedImages.push(...nextBatch);
+        GALLERY_CONFIG.currentLoad++;
+
+        // Render new images with smooth animation
+        renderNewImages(nextBatch, startIndex);
+    }
+
+    galleryState.isLoading = false;
+}
+
+// Render new images with smooth animation
+function renderNewImages(newImages, startIndex) {
+    const galleryGrid = document.getElementById('galleryGrid');
+    if (!galleryGrid) return;
+
+    // Add new images to the grid
+    newImages.forEach((image, index) => {
+        const galleryItem = createGalleryItem(image, startIndex + index);
+        
+        // Set initial state for animation
+        galleryItem.style.opacity = '0';
+        galleryItem.style.transform = 'translateY(30px)';
+        
+        galleryGrid.appendChild(galleryItem);
+        
+        // Animate in with delay
+        setTimeout(() => {
+            galleryItem.style.opacity = '1';
+            galleryItem.style.transform = 'translateY(0)';
+        }, index * 50); // Faster staggered animation for scroll
+    });
+
+    // Move sentinel to the bottom after new images are added
+    const sentinel = document.getElementById('scroll-sentinel');
+    const galleryContainer = document.querySelector('.gallery-container');
+    if (sentinel && galleryContainer) {
+        galleryContainer.appendChild(sentinel);
+    }
+
+    // Trigger masonry layout
+    setTimeout(() => {
+        handleMasonryLayout();
+    }, newImages.length * 50 + 100);
+} 

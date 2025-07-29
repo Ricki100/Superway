@@ -42,6 +42,9 @@
                     <a href="#services" class="nav-link">Services</a>
                 </li>
                 <li class="nav-item">
+                    <a href="#gallery" class="nav-link">Gallery</a>
+                </li>
+                <li class="nav-item">
                     <a href="#contact" class="nav-link">Contact</a>
                 </li>
             </ul>
@@ -185,6 +188,38 @@
             </div>
         </div>
     </section>
+
+    <!-- Gallery Section -->
+    <section id="gallery" class="gallery">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Our Gallery</h2>
+                <p class="section-subtitle">Explore our premium properties and tyre distribution excellence</p>
+            </div>
+            <div class="gallery-container">
+                <div class="gallery-grid" id="galleryGrid">
+                    <!-- Images will be dynamically loaded here -->
+                    <div class="gallery-loading">
+                        <div class="loading-spinner"></div>
+                        <p>Loading gallery...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Lightbox Modal -->
+    <div class="lightbox" id="lightbox">
+        <div class="lightbox-content">
+            <span class="lightbox-close">&times;</span>
+            <img class="lightbox-image" id="lightboxImage" src="" alt="">
+            <div class="lightbox-nav">
+                <button class="lightbox-prev" id="lightboxPrev">&lt;</button>
+                <button class="lightbox-next" id="lightboxNext">&gt;</button>
+            </div>
+            <div class="lightbox-caption" id="lightboxCaption"></div>
+        </div>
+    </div>
 
     <!-- Contact Section -->
     <section id="contact" class="contact">

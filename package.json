@@ -1,0 +1,21 @@
+{
+  "name": "superway-gallery",
+  "version": "1.0.0",
+  "description": "Dynamic image gallery for Superway Group with automatic image detection",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "keywords": [
+    "gallery",
+    "images",
+    "masonry",
+    "responsive"
+  ],
+  "author": "Superway Group",
+  "license": "MIT"
+} 
