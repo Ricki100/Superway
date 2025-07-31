@@ -143,15 +143,17 @@ async function loadGalleryImages() {
     showLoadingState();
 
     try {
-        if (GALLERY_CONFIG.useLocalImages) {
-            await loadFromLocalImages();
-        } else {
-            // For demonstration, we'll use sample images
-            galleryState.images = GALLERY_CONFIG.sampleImages;
-            galleryState.filteredImages = [...galleryState.images];
-        }
+        // Automatically detect and load all images from the images folder
+        const detectedImages = await autoDetectImages();
         
-        renderGallery();
+        if (detectedImages.length > 0) {
+            galleryState.images = detectedImages;
+            galleryState.loadedImages = detectedImages.slice(0, GALLERY_CONFIG.itemsPerLoad);
+            renderGallery();
+            console.log(`Automatically detected and loaded ${detectedImages.length} images from images/ folder`);
+        } else {
+            showErrorState();
+        }
     } catch (error) {
         console.error('Error loading gallery images:', error);
         showErrorState();
@@ -159,6 +161,180 @@ async function loadGalleryImages() {
         galleryState.isLoading = false;
         hideLoadingState();
     }
+}
+
+// Auto-detect images from the images folder
+async function autoDetectImages() {
+    const images = [];
+    let id = 1;
+    
+    // Method 1: Try API endpoint (works on Node.js server)
+    try {
+        const detectedImages = await tryDirectoryListing();
+        if (detectedImages.length > 0) {
+            return detectedImages.map(filename => ({
+                id: id++,
+                src: `./images/${filename}`,
+                title: generateCleanTitleFromFilename(filename)
+            }));
+        }
+    } catch (error) {
+        console.log('API endpoint failed, trying directory listing');
+    }
+    
+    // Method 1b: Try directory listing (works on some web hosts)
+    try {
+        const detectedImages = await tryDirectoryListingWeb();
+        if (detectedImages.length > 0) {
+            return detectedImages.map(filename => ({
+                id: id++,
+                src: `./images/${filename}`,
+                title: generateCleanTitleFromFilename(filename)
+            }));
+        }
+    } catch (error) {
+        console.log('Directory listing failed, trying pattern matching');
+    }
+    
+    // Method 2: Try WhatsApp patterns (for your specific case)
+    try {
+        const detectedImages = await tryWhatsAppPatterns();
+        if (detectedImages.length > 0) {
+            return detectedImages.map(filename => ({
+                id: id++,
+                src: `./images/${filename}`,
+                title: generateCleanTitleFromFilename(filename)
+            }));
+        }
+    } catch (error) {
+        console.log('WhatsApp pattern matching failed');
+    }
+    
+    // Method 3: Try common patterns as fallback
+    try {
+        const detectedImages = await tryCommonPatterns();
+        if (detectedImages.length > 0) {
+            return detectedImages.map(filename => ({
+                id: id++,
+                src: `./images/${filename}`,
+                title: generateCleanTitleFromFilename(filename)
+            }));
+        }
+    } catch (error) {
+        console.log('Common pattern matching failed');
+    }
+    
+    return [];
+}
+
+// Method 1: Try API endpoints (works on Node.js server and PHP hosting)
+async function tryDirectoryListing() {
+    // Try Node.js API first
+    try {
+        const response = await fetch('/api/images');
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.images.length > 0) {
+                console.log(`Found ${data.images.length} images via Node.js API`);
+                return data.images;
+            }
+        }
+    } catch (error) {
+        console.log('Node.js API not available, trying PHP API');
+    }
+    
+    // Try PHP API (for Hostinger and other PHP hosting)
+    try {
+        const response = await fetch('./api/images.php');
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.images.length > 0) {
+                console.log(`Found ${data.images.length} images via PHP API`);
+                return data.images;
+            }
+        }
+    } catch (error) {
+        console.log('PHP API not available, trying fallback methods');
+    }
+    
+    return [];
+}
+
+// Method 1b: Try directory listing (works on some web hosts)
+async function tryDirectoryListingWeb() {
+    try {
+        const response = await fetch('./images/');
+        if (response.ok) {
+            const html = await response.text();
+            const imageFiles = extractImageFilesFromHTML(html, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp']);
+            if (imageFiles.length > 0) {
+                console.log(`Found ${imageFiles.length} images via directory listing`);
+                return imageFiles;
+            }
+        }
+    } catch (error) {
+        console.log('Directory listing not available');
+    }
+    return [];
+}
+
+// Method 2: Try common image patterns
+async function tryCommonPatterns() {
+    const patterns = [];
+    
+    // Generate common image names
+    for (let i = 1; i <= 100; i++) {
+        patterns.push(`image${i}.jpg`);
+        patterns.push(`image${i}.jpeg`);
+        patterns.push(`image${i}.png`);
+        patterns.push(`img${i}.jpg`);
+        patterns.push(`img${i}.jpeg`);
+        patterns.push(`img${i}.png`);
+        patterns.push(`photo${i}.jpg`);
+        patterns.push(`photo${i}.jpeg`);
+        patterns.push(`photo${i}.png`);
+    }
+    
+    const foundImages = [];
+    for (const pattern of patterns) {
+        if (await checkImageExists(`./images/${pattern}`)) {
+            foundImages.push(pattern);
+        }
+    }
+    
+    console.log(`Found ${foundImages.length} images via common patterns`);
+    return foundImages;
+}
+
+// Method 3: Try WhatsApp patterns (for your specific case)
+async function tryWhatsAppPatterns() {
+    const patterns = [];
+    const date = '2025-07-27';
+    
+    // Generate WhatsApp patterns for the entire day
+    for (let hour = 0; hour < 24; hour++) {
+        for (let minute = 0; minute < 60; minute++) {
+            for (let second = 0; second < 60; second++) {
+                const timeStr = `${hour.toString().padStart(2, '0')}.${minute.toString().padStart(2, '0')}.${second.toString().padStart(2, '0')}`;
+                patterns.push(`WhatsApp Image ${date} at ${timeStr} PM.jpeg`);
+                patterns.push(`WhatsApp Image ${date} at ${timeStr} PM (1).jpeg`);
+                patterns.push(`WhatsApp Image ${date} at ${timeStr} PM (2).jpeg`);
+                patterns.push(`WhatsApp Image ${date} at ${timeStr} AM.jpeg`);
+                patterns.push(`WhatsApp Image ${date} at ${timeStr} AM (1).jpeg`);
+                patterns.push(`WhatsApp Image ${date} at ${timeStr} AM (2).jpeg`);
+            }
+        }
+    }
+    
+    const foundImages = [];
+    for (const pattern of patterns) {
+        if (await checkImageExists(`./images/${pattern}`)) {
+            foundImages.push(pattern);
+        }
+    }
+    
+    console.log(`Found ${foundImages.length} images via WhatsApp patterns`);
+    return foundImages;
 }
 
 // Load Local Images
