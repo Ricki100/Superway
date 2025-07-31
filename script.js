@@ -546,7 +546,7 @@ function generateWhatsAppPatterns() {
     return patterns;
 }
 
-// Render Gallery with Progressive Loading
+// Render Gallery - Simple and Reliable
 function renderGallery() {
     const galleryGrid = document.getElementById('galleryGrid');
     if (!galleryGrid) return;
@@ -569,19 +569,17 @@ function renderGallery() {
         return;
     }
 
-    // Try progressive loading, fallback to immediate loading
-    try {
-        loadImagesProgressively(currentItems, 0);
-    } catch (error) {
-        console.log('Progressive loading failed, using fallback:', error);
-        // Fallback: show all images immediately
-        currentItems.forEach((image, index) => {
-            const galleryItem = createGalleryItem(image, index);
-            galleryGrid.appendChild(galleryItem);
+    // Simple approach: show all images at once
+    currentItems.forEach((image, index) => {
+        const galleryItem = createGalleryItem(image, index);
+        galleryGrid.appendChild(galleryItem);
+        
+        // Show item with animation
+        setTimeout(() => {
             galleryItem.style.opacity = '1';
             galleryItem.style.transform = 'translateY(0)';
-        });
-    }
+        }, index * 100);
+    });
 }
 
 // Progressive image loading - one by one
@@ -681,18 +679,14 @@ function handleImageLoad(img) {
     }
 }
 
-// Create Gallery Item
+// Create Gallery Item - Simple
 function createGalleryItem(image, index) {
     const item = document.createElement('div');
     item.className = 'gallery-item';
     item.setAttribute('data-index', index);
     
-    // Show placeholder while loading
     item.innerHTML = `
-        <div class="image-placeholder">
-            <i class="fas fa-image"></i>
-        </div>
-        <img src="${image.src}" alt="${image.title}" loading="lazy" onload="handleImageLoad(this)" style="opacity: 0;">
+        <img src="${image.src}" alt="${image.title}" loading="lazy">
     `;
 
     // Add click event for lightbox
