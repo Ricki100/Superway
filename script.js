@@ -557,6 +557,8 @@ function renderGallery() {
     // Get current loaded items
     const currentItems = galleryState.loadedImages;
 
+    console.log('Rendering gallery with', currentItems.length, 'images');
+
     if (currentItems.length === 0) {
         galleryGrid.innerHTML = `
             <div class="gallery-empty" style="grid-column: 1 / -1; text-align: center; padding: 60px 20px;">
@@ -567,13 +569,29 @@ function renderGallery() {
         return;
     }
 
-    // Start progressive loading
-    loadImagesProgressively(currentItems, 0);
+    // Try progressive loading, fallback to immediate loading
+    try {
+        loadImagesProgressively(currentItems, 0);
+    } catch (error) {
+        console.log('Progressive loading failed, using fallback:', error);
+        // Fallback: show all images immediately
+        currentItems.forEach((image, index) => {
+            const galleryItem = createGalleryItem(image, index);
+            galleryGrid.appendChild(galleryItem);
+            galleryItem.style.opacity = '1';
+            galleryItem.style.transform = 'translateY(0)';
+        });
+    }
 }
 
 // Progressive image loading - one by one
 function loadImagesProgressively(images, index) {
-    if (index >= images.length) return;
+    console.log('Loading image', index + 1, 'of', images.length);
+    
+    if (index >= images.length) {
+        console.log('Finished loading all images');
+        return;
+    }
 
     const galleryGrid = document.getElementById('galleryGrid');
     const image = images[index];
@@ -584,6 +602,7 @@ function loadImagesProgressively(images, index) {
     
     // Load image and show it
     loadSingleImage(image.src, () => {
+        console.log('Image loaded:', image.src);
         // Show item with smooth animation
         galleryItem.style.opacity = '1';
         galleryItem.style.transform = 'translateY(0)';
@@ -597,11 +616,14 @@ function loadImagesProgressively(images, index) {
 
 // Load single image with callback
 function loadSingleImage(src, callback) {
+    console.log('Loading image:', src);
     const img = new Image();
     img.onload = () => {
+        console.log('Image loaded successfully:', src);
         if (callback) callback();
     };
     img.onerror = () => {
+        console.log('Image failed to load:', src);
         if (callback) callback(); // Still continue even if image fails
     };
     img.src = src;
