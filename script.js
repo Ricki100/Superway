@@ -546,7 +546,7 @@ function generateWhatsAppPatterns() {
     return patterns;
 }
 
-// Render Gallery
+// Render Gallery with Progressive Loading
 function renderGallery() {
     const galleryGrid = document.getElementById('galleryGrid');
     if (!galleryGrid) return;
@@ -567,20 +567,44 @@ function renderGallery() {
         return;
     }
 
-    // Create gallery items with smooth loading
-    currentItems.forEach((image, index) => {
-        const galleryItem = createGalleryItem(image, index);
-        galleryGrid.appendChild(galleryItem);
+    // Start progressive loading
+    loadImagesProgressively(currentItems, 0);
+}
+
+// Progressive image loading - one by one
+function loadImagesProgressively(images, index) {
+    if (index >= images.length) return;
+
+    const galleryGrid = document.getElementById('galleryGrid');
+    const image = images[index];
+    
+    // Create gallery item
+    const galleryItem = createGalleryItem(image, index);
+    galleryGrid.appendChild(galleryItem);
+    
+    // Load image and show it
+    loadSingleImage(image.src, () => {
+        // Show item with smooth animation
+        galleryItem.style.opacity = '1';
+        galleryItem.style.transform = 'translateY(0)';
         
-        // Preload image before showing
-        preloadImage(image.src, () => {
-            // Show item with smooth animation
-            setTimeout(() => {
-                galleryItem.style.opacity = '1';
-                galleryItem.style.transform = 'translateY(0)';
-            }, index * 50); // Faster staggered animation
-        });
+        // Load next image after a short delay
+        setTimeout(() => {
+            loadImagesProgressively(images, index + 1);
+        }, 200); // 200ms delay between each image
     });
+}
+
+// Load single image with callback
+function loadSingleImage(src, callback) {
+    const img = new Image();
+    img.onload = () => {
+        if (callback) callback();
+    };
+    img.onerror = () => {
+        if (callback) callback(); // Still continue even if image fails
+    };
+    img.src = src;
 }
 
 // Handle Masonry Layout
@@ -611,10 +635,16 @@ function handleImageLoad(img) {
     // Fade in the image smoothly
     img.style.opacity = '1';
     
-    // Remove placeholder background from parent
+    // Hide placeholder
     const galleryItem = img.closest('.gallery-item');
     if (galleryItem) {
-        galleryItem.style.background = 'transparent';
+        const placeholder = galleryItem.querySelector('.image-placeholder');
+        if (placeholder) {
+            placeholder.style.opacity = '0';
+            setTimeout(() => {
+                placeholder.style.display = 'none';
+            }, 300);
+        }
     }
 }
 
@@ -624,7 +654,11 @@ function createGalleryItem(image, index) {
     item.className = 'gallery-item';
     item.setAttribute('data-index', index);
     
+    // Show placeholder while loading
     item.innerHTML = `
+        <div class="image-placeholder">
+            <i class="fas fa-image"></i>
+        </div>
         <img src="${image.src}" alt="${image.title}" loading="lazy" onload="handleImageLoad(this)">
     `;
 
@@ -738,7 +772,7 @@ function showLoadingState() {
         galleryGrid.innerHTML = `
             <div class="gallery-loading">
                 <div class="loading-spinner"></div>
-                <p>Loading gallery...</p>
+                <p>Loading gallery images...</p>
             </div>
         `;
     }

@@ -1079,6 +1079,10 @@ body {
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
 }
 
+.gallery-item {
+    position: relative;
+}
+
 .gallery-item img {
     width: 100%;
     height: 250px;
@@ -1086,6 +1090,27 @@ body {
     display: block;
     transition: transform 0.3s ease, opacity 0.3s ease;
     opacity: 0;
+    position: relative;
+    z-index: 2;
+}
+
+.image-placeholder {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 250px;
+    background: #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+    transition: opacity 0.3s ease;
+}
+
+.image-placeholder i {
+    font-size: 48px;
+    color: #ccc;
 }
 
 .gallery-item:hover img {
