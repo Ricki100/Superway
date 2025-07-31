@@ -116,10 +116,18 @@ const galleryState = {
 
 // Initialize Gallery
 function initGallery() {
+    // Prevent scroll jumping during gallery load
+    const currentScroll = window.pageYOffset;
+    
     loadGalleryImages();
     setupLightbox();
     setupInfiniteScroll();
     setupMasonryResize();
+    
+    // Maintain scroll position after gallery loads
+    setTimeout(() => {
+        window.scrollTo(0, currentScroll);
+    }, 100);
 }
 
 // Setup Masonry Resize Handler
@@ -559,22 +567,20 @@ function renderGallery() {
         return;
     }
 
-    // Create gallery items with staggered animation
+    // Create gallery items with smooth loading
     currentItems.forEach((image, index) => {
         const galleryItem = createGalleryItem(image, index);
         galleryGrid.appendChild(galleryItem);
         
-        // Add staggered animation delay
-        setTimeout(() => {
-            galleryItem.style.opacity = '1';
-            galleryItem.style.transform = 'translateY(0)';
-        }, index * 100); // 100ms delay between each image
+        // Preload image before showing
+        preloadImage(image.src, () => {
+            // Show item with smooth animation
+            setTimeout(() => {
+                galleryItem.style.opacity = '1';
+                galleryItem.style.transform = 'translateY(0)';
+            }, index * 50); // Faster staggered animation
+        });
     });
-
-    // Trigger masonry layout after images load
-    setTimeout(() => {
-        handleMasonryLayout();
-    }, 100);
 }
 
 // Handle Masonry Layout
@@ -586,6 +592,30 @@ function handleMasonryLayout() {
     galleryGrid.style.display = 'none';
     galleryGrid.offsetHeight; // Trigger reflow
     galleryGrid.style.display = 'block';
+}
+
+// Preload image function
+function preloadImage(src, callback) {
+    const img = new Image();
+    img.onload = () => {
+        if (callback) callback();
+    };
+    img.onerror = () => {
+        if (callback) callback(); // Still show item even if image fails
+    };
+    img.src = src;
+}
+
+// Handle image load with smooth transition
+function handleImageLoad(img) {
+    // Fade in the image smoothly
+    img.style.opacity = '1';
+    
+    // Remove placeholder background from parent
+    const galleryItem = img.closest('.gallery-item');
+    if (galleryItem) {
+        galleryItem.style.background = 'transparent';
+    }
 }
 
 // Create Gallery Item
