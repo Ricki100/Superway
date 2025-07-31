@@ -600,12 +600,21 @@ function loadImagesProgressively(images, index) {
     const galleryItem = createGalleryItem(image, index);
     galleryGrid.appendChild(galleryItem);
     
+    // Test if image element was created
+    const imgElement = galleryItem.querySelector('img');
+    console.log('Created image element:', imgElement ? 'Yes' : 'No', 'for', image.src);
+    
     // Load image and show it
     loadSingleImage(image.src, () => {
         console.log('Image loaded:', image.src);
         // Show item with smooth animation
         galleryItem.style.opacity = '1';
         galleryItem.style.transform = 'translateY(0)';
+        
+        // Force image to show
+        if (imgElement) {
+            imgElement.style.opacity = '1';
+        }
         
         // Load next image after a short delay
         setTimeout(() => {
@@ -654,6 +663,8 @@ function preloadImage(src, callback) {
 
 // Handle image load with smooth transition
 function handleImageLoad(img) {
+    console.log('Image loaded in DOM:', img.src);
+    
     // Fade in the image smoothly
     img.style.opacity = '1';
     
@@ -681,7 +692,7 @@ function createGalleryItem(image, index) {
         <div class="image-placeholder">
             <i class="fas fa-image"></i>
         </div>
-        <img src="${image.src}" alt="${image.title}" loading="lazy" onload="handleImageLoad(this)">
+        <img src="${image.src}" alt="${image.title}" loading="lazy" onload="handleImageLoad(this)" style="opacity: 0;">
     `;
 
     // Add click event for lightbox
