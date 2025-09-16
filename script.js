@@ -151,14 +151,30 @@ async function loadGalleryImages() {
     showLoadingState();
 
     try {
-        // Automatically detect and load all images from the images folder
-        const detectedImages = await autoDetectImages();
+        // Try to automatically detect images first
+        let detectedImages = await autoDetectImages();
+        
+        // If no images detected, use hardcoded fallback
+        if (detectedImages.length === 0) {
+            console.log('No images detected via auto-detection, using hardcoded fallback');
+            detectedImages = [
+                { id: 1, src: './images/WhatsApp Image 2025-07-27 at 7.22.20 PM (1).jpeg', title: 'Image 7.22.20' },
+                { id: 2, src: './images/WhatsApp Image 2025-07-27 at 7.22.20 PM.jpeg', title: 'Image 7.22.20' },
+                { id: 3, src: './images/WhatsApp Image 2025-07-27 at 7.22.21 PM (1).jpeg', title: 'Image 7.22.21' },
+                { id: 4, src: './images/WhatsApp Image 2025-07-27 at 7.22.21 PM (2).jpeg', title: 'Image 7.22.21' },
+                { id: 5, src: './images/WhatsApp Image 2025-07-27 at 7.22.21 PM.jpeg', title: 'Image 7.22.21' },
+                { id: 6, src: './images/WhatsApp Image 2025-07-27 at 7.22.22 PM (1).jpeg', title: 'Image 7.22.22' },
+                { id: 7, src: './images/WhatsApp Image 2025-07-27 at 7.22.22 PM (2).jpeg', title: 'Image 7.22.22' },
+                { id: 8, src: './images/WhatsApp Image 2025-07-27 at 7.22.22 PM.jpeg', title: 'Image 7.22.22' },
+                { id: 9, src: './images/WhatsApp Image 2025-07-27 at 7.22.23 PM (1).jpeg', title: 'Image 7.22.23' }
+            ];
+        }
         
         if (detectedImages.length > 0) {
             galleryState.images = detectedImages;
             galleryState.loadedImages = detectedImages.slice(0, GALLERY_CONFIG.itemsPerLoad);
             renderGallery();
-            console.log(`Automatically detected and loaded ${detectedImages.length} images from images/ folder`);
+            console.log(`Loaded ${detectedImages.length} images for gallery`);
         } else {
             showErrorState();
         }
@@ -230,6 +246,36 @@ async function autoDetectImages() {
         }
     } catch (error) {
         console.log('Common pattern matching failed');
+    }
+    
+    // Method 4: Hardcoded fallback for your specific images
+    const hardcodedImages = [
+        'WhatsApp Image 2025-07-27 at 7.22.20 PM (1).jpeg',
+        'WhatsApp Image 2025-07-27 at 7.22.20 PM.jpeg',
+        'WhatsApp Image 2025-07-27 at 7.22.21 PM (1).jpeg',
+        'WhatsApp Image 2025-07-27 at 7.22.21 PM (2).jpeg',
+        'WhatsApp Image 2025-07-27 at 7.22.21 PM.jpeg',
+        'WhatsApp Image 2025-07-27 at 7.22.22 PM (1).jpeg',
+        'WhatsApp Image 2025-07-27 at 7.22.22 PM (2).jpeg',
+        'WhatsApp Image 2025-07-27 at 7.22.22 PM.jpeg',
+        'WhatsApp Image 2025-07-27 at 7.22.23 PM (1).jpeg'
+    ];
+    
+    // Verify each image exists before adding
+    const verifiedImages = [];
+    for (const filename of hardcodedImages) {
+        if (await checkImageExists(`./images/${filename}`)) {
+            verifiedImages.push(filename);
+        }
+    }
+    
+    if (verifiedImages.length > 0) {
+        console.log(`Found ${verifiedImages.length} images via hardcoded fallback`);
+        return verifiedImages.map(filename => ({
+            id: id++,
+            src: `./images/${filename}`,
+            title: generateCleanTitleFromFilename(filename)
+        }));
     }
     
     return [];
@@ -487,12 +533,12 @@ function generateCleanTitleFromFilename(filename) {
 
 // Check if an image exists
 async function checkImageExists(url) {
-    try {
-        const response = await fetch(url, { method: 'HEAD' });
-        return response.ok;
-    } catch (error) {
-        return false;
-    }
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(true);
+        img.onerror = () => resolve(false);
+        img.src = url;
+    });
 }
 
 // Extract image files from HTML directory listing
@@ -686,7 +732,10 @@ function createGalleryItem(image, index) {
     item.setAttribute('data-index', index);
     
     item.innerHTML = `
-        <img src="${image.src}" alt="${image.title}" loading="lazy">
+        <img src="${image.src}" alt="${image.title}" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+        <div class="image-placeholder" style="display: none; align-items: center; justify-content: center; height: 200px; background: #f0f0f0; color: #666;">
+            <i class="fas fa-image"></i>
+        </div>
     `;
 
     // Add click event for lightbox
