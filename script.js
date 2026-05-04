@@ -871,6 +871,31 @@ function showErrorState() {
 // Contact form handling
 const contactForm = document.getElementById('contactForm');
 if (contactForm) {
+    async function submitContact(data) {
+        const endpoints = ['/api/contact', './api/contact.php'];
+        for (const endpoint of endpoints) {
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok || response.status !== 404) {
+                    return response;
+                }
+            } catch (error) {
+                if (endpoint === endpoints[endpoints.length - 1]) {
+                    throw error;
+                }
+            }
+        }
+
+        throw new Error('No contact endpoint available');
+    }
+
     contactForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
@@ -885,15 +910,7 @@ if (contactForm) {
         submitBtn.disabled = true;
         
         try {
-            // Send to our backend API
-            const response = await fetch('/api/contact', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data)
-            });
-            
+            const response = await submitContact(data);
             const result = await response.json();
             
             if (result.success) {
