@@ -94,11 +94,6 @@ window.addEventListener('scroll', () => {
     }
 });
 
-// Initialize EmailJS
-(function() {
-            emailjs.init("8EJ11hMm_Y23NTUuX");
-})();
-
 // Gallery Configuration
 const GALLERY_CONFIG = {
     useLocalImages: true,
@@ -827,7 +822,7 @@ function showErrorState() {
 // Contact form handling
 const contactForm = document.getElementById('contactForm');
 if (contactForm) {
-    contactForm.addEventListener('submit', (e) => {
+    contactForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
         // Get form data
@@ -840,31 +835,32 @@ if (contactForm) {
         submitBtn.textContent = 'Sending...';
         submitBtn.disabled = true;
         
-        // Prepare email template parameters
-        const templateParams = {
-            from_name: data.name,
-            from_email: data.email,
-            phone: data.phone,
-            service: data.service,
-            message: data.message,
-            to_email: 'info@superwaygroup.online'
-        };
-        
-        // Send email using EmailJS
-        emailjs.send('service_i71xf3h', 'template_s0gj98c', templateParams)
-            .then(function(response) {
-                console.log('SUCCESS!', response.status, response.text);
+        try {
+            // Send to our backend API
+            const response = await fetch('/api/contact', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
                 showNotification('Thank you! Your message has been sent successfully.', 'success');
                 contactForm.reset();
-            }, function(error) {
-                console.log('FAILED...', error);
-                showNotification('Sorry, there was an error sending your message. Please try again.', 'error');
-            })
-            .finally(function() {
-                // Reset button
-                submitBtn.textContent = originalText;
-                submitBtn.disabled = false;
-            });
+            } else {
+                showNotification(`Sorry, there was an error: ${result.error}. Please try again.`, 'error');
+            }
+        } catch (error) {
+            console.error('Contact form error:', error);
+            showNotification('Sorry, there was an error sending your message. Please try again.', 'error');
+        } finally {
+            // Reset button
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+        }
     });
 }
 
